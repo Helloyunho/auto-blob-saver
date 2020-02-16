@@ -203,7 +203,7 @@ async fn main() {
     default_shsh_path.push(".shsh");
 
     let matches = App::new("Auto Blob Saver")
-        .version("0.1.0")
+        .version("0.1.1")
         .author("Helloyunho (@yunho098765)")
         .about("Save your blobs automatically")
         .arg(
