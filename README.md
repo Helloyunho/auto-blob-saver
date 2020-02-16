@@ -25,7 +25,7 @@ NOTE: You need to install tsschecker first.
 4. Once it's off, edit ~/.auto_blob_saver/config.json for your phone
 5. Run 'auto_blob_saver' command again and enjoy!
 
-NOTE: if you're getting trouble because of 'curlcode=28', run 'tsschecker --nocache -o' and try again.
+NOTE: if you're getting trouble because of 'curlcode=28' or '[Error] [TSSC] parsing firmware.json failed', run 'tsschecker --nocache -o' and try again.
 ```
 
 ## Usage
