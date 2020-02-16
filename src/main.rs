@@ -153,11 +153,18 @@ impl Device {
 
             for _i in 1..10 {
                 let mut rng = thread_rng();
-                let re = Regex::new(r"iPhone(?P<gen>\d{1,2}),\d{1}").unwrap();
+                let re = Regex::new(r"(?P<model>iPhone|iPad|iPod)(?P<gen>\d{1,2}),\d{1}").unwrap();
                 let parsed = re.captures(&self.identifier).unwrap();
+                let model = &parsed["model"];
                 let gen = &parsed["gen"];
                 let gen_num: u32 = gen.parse().unwrap();
-                let length = if gen_num < 9 { 40 } else { 64 };
+                let length = if ((model == "iPhone" || model == "iPod") && gen_num < 9)
+                    || (model == "iPad" && gen_num < 7)
+                {
+                    40
+                } else {
+                    64
+                };
                 let apnonce: String = (0..length)
                     .map(|_| {
                         let idx = rng.gen_range(0, APNONCE.len());
