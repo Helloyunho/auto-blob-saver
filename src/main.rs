@@ -157,7 +157,7 @@ impl Device {
                 let parsed = re.captures(&self.identifier).unwrap();
                 let gen = &parsed["gen"];
                 let gen_num: u32 = gen.parse().unwrap();
-                let length = if gen_num < 10 { 40 } else { 64 };
+                let length = if gen_num < 9 { 40 } else { 64 };
                 let apnonce: String = (0..length)
                     .map(|_| {
                         let idx = rng.gen_range(0, APNONCE.len());
