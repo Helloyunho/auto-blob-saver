@@ -16,3 +16,4 @@ tokio = { version = "*", features = ["macros", "tcp", "dns", "io-util"] }
 regex = "*"
 dirs = "*"
 clap = "*"
+num_cpus = "*"

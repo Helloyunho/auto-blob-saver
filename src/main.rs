@@ -1,6 +1,7 @@
 extern crate clap;
 extern crate dirs;
 extern crate job_scheduler;
+extern crate num_cpus;
 extern crate regex;
 extern crate reqwest;
 extern crate tokio;
@@ -8,6 +9,7 @@ use clap::{value_t, App, Arg};
 use rand::{thread_rng, Rng};
 use regex::Regex;
 use serde::Deserialize;
+use std::convert::TryFrom;
 use std::fs;
 use std::path::Path;
 use std::process::Command;
@@ -60,7 +62,20 @@ fn args_builder(
     if ota {
         args.push("-o".to_string());
     }
-    if !generator.is_none() {
+    if !generator.is_none() && !apnonce.is_none() {
+        args.push("-g".to_string());
+        args.push(generator.unwrap().to_string());
+        args.push("--apnonce".to_string());
+        args.push(apnonce.unwrap().to_string());
+        args.push("--save-path".to_string());
+        args.push(format!(
+            "{}/{}/{}/{}",
+            shsh_path,
+            ecid,
+            buildid,
+            generator.unwrap().to_string()
+        ));
+    } else if !generator.is_none() {
         args.push("-g".to_string());
         args.push(generator.unwrap().to_string());
         args.push("--save-path".to_string());
@@ -106,6 +121,7 @@ struct Device {
     ecid: String,
     identifier: String,
     boardconfig: Option<String>,
+    apnonce: Option<Vec<String>>,
 }
 
 impl Device {
@@ -135,23 +151,40 @@ impl Device {
                 shsh_path, self.ecid, firmware.buildid
             ));
 
-            for generator in vec!["0x1111111111111111", "0xbd34a880be0b53f3"] {
-                Command::new("tsschecker")
-                    .args(&args_builder(
-                        &self.ecid,
-                        &self.identifier,
-                        self.boardconfig.as_ref(),
-                        &firmware.buildid,
-                        Some(&generator.to_string()),
-                        None,
-                        firmware.releasetype == "Beta",
-                        shsh_path,
-                    ))
-                    .spawn()
-                    .expect("An error has occured while getting the blob.");
+            let fixed_generators = vec!["0x1111111111111111", "0xbd34a880be0b53f3"];
+            for (index, generator) in fixed_generators.iter().enumerate() {
+                if self.apnonce.is_none() {
+                    Command::new("tsschecker")
+                        .args(&args_builder(
+                            &self.ecid,
+                            &self.identifier,
+                            self.boardconfig.as_ref(),
+                            &firmware.buildid,
+                            Some(&generator.to_string()),
+                            None,
+                            firmware.releasetype == "Beta",
+                            shsh_path,
+                        ))
+                        .spawn()
+                        .expect("An error has occured while getting the blob.");
+                } else {
+                    Command::new("tsschecker")
+                        .args(&args_builder(
+                            &self.ecid,
+                            &self.identifier,
+                            self.boardconfig.as_ref(),
+                            &firmware.buildid,
+                            Some(&generator.to_string()),
+                            (self.apnonce.as_ref()).unwrap().get(index),
+                            firmware.releasetype == "Beta",
+                            shsh_path,
+                        ))
+                        .spawn()
+                        .expect("An error has occured while getting the blob.");
+                }
             }
 
-            for _i in 1..10 {
+            for _i in 1..num_cpus::get() {
                 let mut rng = thread_rng();
                 let re = Regex::new(r"(?P<model>iPhone|iPad|iPod)(?P<gen>\d{1,2}),\d{1}").unwrap();
                 let parsed = re.captures(&self.identifier).unwrap();
@@ -190,6 +223,9 @@ impl Device {
                     .spawn()
                     .expect("An error has occured while getting the blob.");
             }
+            thread::sleep(time::Duration::from_millis(
+                u64::try_from(10000 / num_cpus::get()).unwrap(),
+            ));
         }
     }
 }
@@ -252,7 +288,8 @@ async fn main() {
     {
         \"ecid\": \"ECID\",
         \"identifier\": \"Phone Identifier(Ex. iPhone12,1)\",
-        \"boardconfig\": \"Phone Boardconfig(It's optional)(Ex. n71ap)\"
+        \"boardconfig\": \"Phone Boardconfig(It's optional)(Ex. n71ap)\",
+        \"apnonces\": [\"Apnonce for generator 0x1111111111111111 (Don't need if your device is pre-A11)\", \"Apnonce for generator 0xbd34a880be0b53f3 (Don't need if your device is pre-A11)\"]
     }
 ]",
         ),
@@ -266,7 +303,9 @@ async fn main() {
     loop {
         for device in &devices {
             device.get_blobs(shsh_path).await;
-            thread::sleep(time::Duration::from_millis(1000));
+            thread::sleep(time::Duration::from_millis(
+                u64::try_from(100000 / num_cpus::get()).unwrap(),
+            ));
         }
         thread::sleep(time::Duration::from_millis(interval));
     }
