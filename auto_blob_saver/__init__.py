@@ -5,9 +5,9 @@ import asyncio
 import aiohttp
 import secrets
 import re
-import const
+from . import CONST
 from pathlib import Path
-from utils.run_tsschecker import run_tsschecker
+from .utils import run_tsschecker
 
 
 async def get_blobs(device: dict, shsh_path: Path):
@@ -128,7 +128,7 @@ async def main():
     os.makedirs(args.devices_path.parent, exist_ok=True)
     if not args.devices_path.is_file():
         with open(args.devices_path, "w") as write_file:
-            write_file.write(json.dumps(const.default_devices_settings))
+            write_file.write(json.dumps(CONST.default_devices_settings))
             print(
                 f"Config file has written. Edit config file on {str(args.devices_path)}."
             )
