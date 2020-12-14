@@ -10,7 +10,7 @@ def long_description():
 
 setuptools.setup(
     name="auto_blob_saver",
-    version='0.1.1',
+    version="0.1.2",
     description="Save your blobs automatically.",
     long_description=long_description(),
     long_description_content_type="text/markdown",

@@ -135,13 +135,26 @@ async def main():
             exit()
     os.makedirs(args.shsh_path, exist_ok=True)
 
-    with open(args.devices_path, "r") as read_file:
-        devices = json.load(read_file)
-        while True:
+    while True:
+        with open(args.devices_path, "r") as read_file:
+            devices = json.load(read_file)
+            proc = await asyncio.create_subprocess_shell(
+                "tsschecker --nocache -o",
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
+            await proc.wait()
+
+            proc = await asyncio.create_subprocess_shell(
+                "tsschecker --nocache",
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
+            await proc.wait()
+
             for device in devices:
                 await get_blobs(device, args.shsh_path)
-                await asyncio.sleep(100000 / os.cpu_count() / 1000)
-            await asyncio.sleep(args.time_interval / 1000)
+        await asyncio.sleep(args.time_interval / 1000)
 
 
 if __name__ == "__main__":
